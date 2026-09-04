@@ -3,26 +3,1661 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juntada</title>
+<title>Juntada - ¿A quién le toca?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F6F63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Juntada">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
+  :root{
+    --paper: #FAF3E2;
+    --card: #FFFDF7;
+    --ink: #2B2118;
+    --ink-soft: #6E6355;
+    --teal: #1F6F63;
+    --teal-dark: #164F46;
+    --mustard: #E8A33D;
+    --line: #E6DCC3;
+    --danger: #B0483A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
   body{
-    font-family: sans-serif;
-    background: #FAF3E2;
-    color: #2B2118;
+    background: var(--paper);
+    background-image: radial-gradient(circle at 15% 10%, rgba(31,111,99,0.06), transparent 40%),
+                       radial-gradient(circle at 85% 90%, rgba(232,163,61,0.08), transparent 45%);
+    min-height: 100vh;
+    font-family: 'Nunito Sans', sans-serif;
+    color: var(--ink);
+    display:flex;
+    justify-content:center;
+    padding: 28px 16px 60px;
+  }
+  .lock-screen{
+    position: fixed;
+    inset: 0;
+    background: var(--paper);
     display:flex;
     align-items:center;
     justify-content:center;
-    height:100vh;
-    margin:0;
-    text-align:center;
+    z-index: 100;
     padding: 20px;
+  }
+  .lock-card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 32px 28px;
+    max-width: 320px;
+    width:100%;
+    text-align:center;
+    box-shadow: 0 8px 24px rgba(43,33,24,0.08);
+  }
+  .lock-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 19px;
+    margin: 0 0 4px;
+  }
+  .lock-sub{
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+  .lock-input{
+    width:100%;
+    text-align:center;
+    letter-spacing: 4px;
+    font-size: 20px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    margin-bottom: 8px;
+    font-family: 'Nunito Sans', sans-serif;
+  }
+  .lock-input:focus{ outline: 2px solid var(--teal); outline-offset: 1px; }
+  .lock-error{
+    color: var(--danger);
+    font-size: 12.5px;
+    margin: 0 0 10px;
+  }
+  .lock-btn{
+    width:100%;
+    background: var(--teal);
+    color:#fff;
+    border:none;
+    border-radius: 10px;
+    padding: 12px;
+    font-weight:700;
+    font-size: 14.5px;
+    cursor:pointer;
+  }
+  .lock-btn:hover{ background: var(--teal-dark); }
+
+  .wrap{ width:100%; max-width: 440px; }
+
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom: 18px;
+  }
+  header.top h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 22px;
+    margin:0;
+    letter-spacing: -0.01em;
+  }
+  .gear{
+    background:none;
+    border:none;
+    cursor:pointer;
+    color: var(--ink-soft);
+    font-size: 20px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .gear:hover{ background: rgba(0,0,0,0.05); }
+
+  .install-banner{
+    background: rgba(31,111,99,0.08);
+    border: 1px solid rgba(31,111,99,0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .install-banner strong{ color: var(--teal-dark); }
+  .install-banner .install-steps{
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: var(--ink-soft);
+  }
+  .install-banner .install-steps li{ margin-bottom: 3px; }
+  .install-banner .install-close{
+    float: right;
+    background:none;
+    border:none;
+    color: var(--ink-soft);
+    cursor:pointer;
+    font-size: 15px;
+    line-height:1;
+    padding: 0 0 0 8px;
+  }
+
+  .rating-card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    text-align:center;
+  }
+  .rating-title{
+    font-size: 14px;
+    color: var(--ink);
+    margin: 0 0 10px;
+    font-weight: 700;
+  }
+  .stars-row{
+    display:flex;
+    justify-content:center;
+    gap: 4px;
+  }
+  .star-btn{
+    background:none;
+    border:none;
+    font-size: 30px;
+    line-height:1;
+    color: var(--line);
+    cursor:pointer;
+    padding: 2px;
+    transition: color 0.1s, transform 0.1s;
+  }
+  .star-btn:hover{ transform: scale(1.1); }
+  .star-btn.filled{ color: var(--mustard); }
+  .rating-thanks{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: 8px 0 0;
+  }
+
+  .identity-line{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: -10px 0 16px;
+  }
+  .identity-line .change-identity{
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 2px;
+    cursor: pointer;
+    color: var(--teal-dark);
+    font-weight: 700;
+  }
+  .not-my-turn-box{
+    background: var(--paper);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .not-my-turn-box .change-identity{
+    text-decoration: underline;
+    cursor: pointer;
+    color: var(--teal-dark);
+    font-weight: 700;
+  }
+
+  .card{
+    background: var(--card);
+    border-radius: 18px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 1px 2px rgba(43,33,24,0.06), 0 8px 24px rgba(43,33,24,0.07);
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--teal), var(--mustard));
+  }
+
+  .label-eyebrow{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 4px;
+  }
+  .whose-turn{
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 44px;
+    line-height: 1.05;
+    color: var(--teal-dark);
+    margin: 0 0 6px;
+    word-break: break-word;
+  }
+  .next-date{
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+  }
+
+  .done-btn{
+    width:100%;
+    background: var(--teal);
+    color: #fff;
+    border:none;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-family:'Nunito Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15.5px;
+    cursor:pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .done-btn:hover{ background: var(--teal-dark); }
+  .done-btn:active{ transform: scale(0.98); }
+  .done-btn:disabled{ opacity:0.5; cursor:default; }
+
+  .credit-btn{
+    width:100%;
+    background: none;
+    border: 1.5px solid var(--teal);
+    color: var(--teal-dark);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-family:'Nunito Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+    cursor:pointer;
+    margin-top: 8px;
+    transition: background 0.15s;
+  }
+  .credit-btn:hover{ background: rgba(31,111,99,0.08); }
+
+  .order-section{
+    margin-top: 26px;
+  }
+  .order-title{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+  }
+  .order-list{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+  }
+  .order-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 14.5px;
+  }
+  .order-row.current{
+    background: rgba(31,111,99,0.08);
+    font-weight: 700;
+    color: var(--teal-dark);
+  }
+  .order-num{
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--line);
+    color: var(--ink-soft);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink:0;
+  }
+  .order-row.current .order-num{
+    background: var(--teal);
+    color:#fff;
+  }
+  .order-name{ flex:1; }
+  .order-check{ color: var(--mustard); font-size: 13px; }
+
+  .attendance-section{
+    margin-top: 22px;
+  }
+  .attend-list{
+    display:flex;
+    flex-direction:column;
+    gap: 4px;
+  }
+  .attend-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 6px 4px;
+    font-size: 14px;
+  }
+  .attend-icon{ width:18px; text-align:center; flex-shrink:0; }
+  .attend-name{ flex:1; }
+  .attend-btn{
+    background:none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    border-radius: 7px;
+    padding: 4px 9px;
+    font-size: 12px;
+    font-weight:700;
+    cursor:pointer;
+    margin-left: 6px;
+  }
+  .attend-btn.active-yes{ background: var(--teal); color:#fff; border-color: var(--teal); }
+  .attend-btn.active-no{ background: var(--danger); color:#fff; border-color: var(--danger); }
+
+  .debts-section{
+    margin-top: 20px;
+  }
+  .debt-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: rgba(232,163,61,0.10);
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .debt-row.credit-row{
+    background: rgba(31,111,99,0.10);
+  }
+
+  .history-toggle{
+    margin-top: 20px;
+    background:none;
+    border:none;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    cursor:pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+  }
+  .history-list{
+    margin-top: 10px;
+    display:none;
+    flex-direction:column;
+    gap: 4px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+  .history-list.open{ display:flex; }
+  .history-item{ display:flex; justify-content:space-between; gap:10px; }
+
+  .empty-state{
+    text-align:center;
+    padding: 20px 0 6px;
+  }
+  .empty-state p{
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    margin: 0 0 16px;
+    line-height:1.5;
+  }
+
+  /* Settings panel */
+  .overlay{
+    position: fixed;
+    inset:0;
+    background: rgba(43,33,24,0.35);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index: 10;
+  }
+  .overlay.open{ display:flex; }
+  .panel{
+    background: var(--card);
+    width:100%;
+    max-width: 440px;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 22px 26px;
+    max-height: 82vh;
+    overflow-y:auto;
+  }
+  .panel h2{
+    font-family:'Fraunces', serif;
+    font-size: 19px;
+    margin: 0 0 4px;
+  }
+  .panel .sub{
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+  }
+  .name-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .name-row input{
+    flex:1;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    font-size: 14.5px;
+    font-family:'Nunito Sans', sans-serif;
+    background: var(--paper);
+  }
+  .name-row input:focus{ outline: 2px solid var(--teal); outline-offset: 1px; }
+  .remove-btn{
+    background:none;
+    border:none;
+    color: var(--danger);
+    font-size: 18px;
+    cursor:pointer;
+    padding: 4px 8px;
+  }
+  .add-btn{
+    background:none;
+    border: 1px dashed var(--line);
+    color: var(--teal-dark);
+    border-radius: 9px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-weight:700;
+    cursor:pointer;
+    width:100%;
+    margin-top: 4px;
+  }
+  .panel-actions{
+    display:flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn-secondary{
+    flex:1;
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    border-radius: 10px;
+    padding: 11px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-primary{
+    flex:1;
+    background: var(--teal);
+    color: #fff;
+    border:none;
+    border-radius: 10px;
+    padding: 11px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor:pointer;
+  }
+  .status{
+    text-align:center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 14px;
+  }
+  .date-line{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border-radius: 9px;
+    padding: 9px 12px;
+    margin-bottom: 18px;
+  }
+  .date-line strong{ color: var(--ink); font-weight: 700; }
+  .edit-date-btn{
+    background:none;
+    border:none;
+    color: var(--ink-soft);
+    font-size: 14px;
+    cursor:pointer;
+    padding: 2px 4px;
+    flex-shrink: 0;
+  }
+  .edit-date-btn:hover{ color: var(--teal-dark); }
+
+  .notify-box{
+    margin-top: 4px;
+  }
+  .confirm-check{
+    display:flex;
+    align-items:flex-start;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .confirm-check input{ accent-color: var(--teal); margin-top: 2px; }
+
+  .reason-label{
+    display:block;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 4px 0 6px;
+  }
+  .reason-textarea{
+    resize: vertical;
+    min-height: 44px;
+    font-family: 'Nunito Sans', sans-serif;
+  }
+  .reason-error{
+    color: var(--danger);
+    font-size: 12.5px;
+    margin: 6px 0 0;
+  }
+  .reason-tag{
+    display:block;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-top: 1px;
+  }
+
+  .credit-link{
+    color: var(--teal-dark);
+    font-weight: 700;
+    text-decoration-color: var(--teal);
+  }
+
+  .swap-link{
+    display:block;
+    width:100%;
+    text-align:center;
+    background:none;
+    border:none;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    margin-top: 10px;
+    cursor:pointer;
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+  }
+  .swap-panel-sub{
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+  }
+  .swap-options{
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .swap-option{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    cursor:pointer;
+    font-size: 14.5px;
+    background: var(--paper);
+  }
+  .swap-option.selected{
+    border-color: var(--teal);
+    background: rgba(31,111,99,0.08);
+    font-weight: 700;
+    color: var(--teal-dark);
+  }
+  .swap-option input{ accent-color: var(--teal); }
+  .swap-other-input{
+    width:100%;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    font-size: 14.5px;
+    font-family:'Nunito Sans', sans-serif;
+    background: var(--paper);
+    margin-top: 4px;
+  }
+  .cover-tag{
+    font-size: 12px;
+    color: var(--mustard);
+    font-weight: 700;
+  }
+  .shared-note{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: rgba(232,163,61,0.12);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 16px;
+    line-height: 1.4;
   }
 </style>
 </head>
 <body>
-  <div>
-    <h1>🚧 En construcción</h1>
-    <p>La app de turnos está por acá pronto.</p>
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-card">
+    <p class="lock-title">🔒 Solo para la barra</p>
+    <p class="lock-sub">Poné el PIN para entrar</p>
+    <input type="password" inputmode="numeric" id="pinInput" class="lock-input" placeholder="••••••" maxlength="10" autofocus>
+    <p class="lock-error" id="pinError" style="display:none;">PIN incorrecto, probá de nuevo.</p>
+    <button class="lock-btn" id="pinSubmitBtn">Entrar</button>
   </div>
+</div>
+
+<div class="wrap" id="mainWrap" style="display:none;">
+  <header class="top">
+    <h1>¿A quién le toca?</h1>
+    <button class="gear" id="gearBtn" aria-label="Editar barra">⚙︎</button>
+  </header>
+  <p class="identity-line" id="identityLine"></p>
+  <div id="ratingCard"></div>
+  <div id="installBanner"></div>
+
+  <div class="card" id="mainCard">
+    <div id="loading" style="text-align:center; padding: 30px 0; color:var(--ink-soft); font-size:14px;">Cargando...</div>
+  </div>
+
+  <button class="history-toggle" id="historyToggle" style="display:none;">Ver historial</button>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<div class="overlay" id="menuOverlay">
+  <div class="panel">
+    <h2>Menú de esta juntada</h2>
+    <p class="swap-panel-sub">Contales a todos qué van a comer.</p>
+    <textarea class="swap-other-input reason-textarea" id="menuInput" rows="2" placeholder="Ej: Asado, fideos con tuco..."></textarea>
+    <div class="panel-actions">
+      <button class="btn-secondary" id="menuCancelBtn">Cancelar</button>
+      <button class="btn-primary" id="menuSaveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="identityOverlay">
+  <div class="panel">
+    <h2>¿Quién sos vos?</h2>
+    <p class="swap-panel-sub">Se guarda solo en este celular/navegador — así la app sabe cuándo dejarte tocar los botones de organizar o pasar el turno.</p>
+    <div class="swap-options" id="identityOptions"></div>
+    <div class="panel-actions">
+      <button class="btn-secondary" id="identityCancelBtn">Cancelar</button>
+      <button class="btn-primary" id="identitySaveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="dateConfirmOverlay">
+  <div class="panel">
+    <h2>¿Qué miércoles fue?</h2>
+    <p class="swap-panel-sub" id="dateConfirmSub">Confirmá o corregí la fecha de esta juntada.</p>
+    <input type="date" id="meetingDateInput" class="swap-other-input" style="margin-bottom:6px;">
+    <div class="panel-actions">
+      <button class="btn-secondary" id="dateConfirmCancelBtn">Cancelar</button>
+      <button class="btn-primary" id="dateConfirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="editNextDateOverlay">
+  <div class="panel">
+    <h2>Próxima juntada</h2>
+    <p class="swap-panel-sub">Cambiala si cae en un día que no se van a juntar (feriado, viaje, etc).</p>
+    <input type="date" id="nextDateInput" class="swap-other-input" style="margin-bottom:6px;">
+    <div class="panel-actions">
+      <button class="btn-secondary" id="editNextDateCancelBtn">Cancelar</button>
+      <button class="btn-primary" id="editNextDateOkBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="swapOverlay">
+  <div class="panel">
+    <h2 id="swapTitle">¿Quién cubre esta vez?</h2>
+    <p class="swap-panel-sub" id="swapSub"></p>
+    <div class="swap-options" id="swapOptions"></div>
+    <input type="text" class="swap-other-input" id="swapOtherInput" placeholder="O escribí otro nombre" style="display:none;">
+    <label class="reason-label" for="swapReasonInput">Motivo por el que no podés organizar</label>
+    <textarea class="swap-other-input reason-textarea" id="swapReasonInput" placeholder="Contá qué pasó..." rows="2"></textarea>
+    <p class="reason-error" id="swapReasonError" style="display:none;">Contá el motivo, no hay pases libres 😏</p>
+
+    <div class="notify-box" id="notifyBox">
+      <label class="confirm-check">
+        <input type="checkbox" id="confirmedCheck">
+        Ya le avisé y me confirmó que puede
+      </label>
+      <p class="reason-error" id="confirmedError" style="display:none;">Confirmá que ya habló con la persona antes de seguir.</p>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn-secondary" id="swapCancelBtn">Cancelar</button>
+      <button class="btn-primary" id="swapConfirmBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2>Editar la barra</h2>
+    <p class="sub">Sumá, sacá o reordená a quiénes les toca. El orden de la lista es el orden de rotación.</p>
+    <div id="nameRows"></div>
+    <button class="add-btn" id="addNameBtn">+ Agregar persona</button>
+    <div class="panel-actions">
+      <button class="btn-secondary" id="cancelBtn">Cancelar</button>
+      <button class="btn-primary" id="saveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ⚠️ CONFIGURACIÓN: completar con los datos de tu proyecto de Supabase
+// (Project Settings → API → Project URL / anon public key)
+const SUPABASE_URL = 'https://nzmxynmgfaviadroafit.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56bXh5bm1nZmF2aWFkcm9hZml0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0OTgzMjEsImV4cCI6MjEwNDA3NDMyMX0.q9K4WFNh4jJqhrrfmtUrulwF-FQuzEKABF_rZ3IhxG0';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let state = null;
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function toYMD(dateObj){
+  return `${dateObj.getFullYear()}-${pad2(dateObj.getMonth()+1)}-${pad2(dateObj.getDate())}`;
+}
+function parseYMD(str){
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function todayYMD(){ return toYMD(new Date()); }
+function addDays(ymdStr, days){
+  const d = parseYMD(ymdStr);
+  d.setDate(d.getDate() + days);
+  return toYMD(d);
+}
+function isYMD(str){ return typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str); }
+
+function fmtDate(d){
+  const dateObj = isYMD(d) ? parseYMD(d) : new Date(d);
+  return new Intl.DateTimeFormat('es-AR', { day:'numeric', month:'short' }).format(dateObj);
+}
+function fmtDateLong(d){
+  const dateObj = isYMD(d) ? parseYMD(d) : new Date(d);
+  const str = new Intl.DateTimeFormat('es-AR', { weekday:'long', day:'numeric', month:'long' }).format(dateObj);
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+let myIdentity = null;
+
+function loadIdentity(){
+  try{
+    const v = localStorage.getItem('my-identity');
+    if(v) myIdentity = v;
+  }catch(e){
+    myIdentity = null;
+  }
+}
+function saveIdentity(name){
+  myIdentity = name;
+  try{
+    localStorage.setItem('my-identity', name);
+  }catch(e){
+    console.error('No se pudo guardar la identidad', e);
+  }
+}
+
+function isStandalone(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+
+let installBannerDismissed = false;
+function loadInstallBannerDismissed(){
+  try{
+    installBannerDismissed = localStorage.getItem('install-banner-dismissed') === 'yes';
+  }catch(e){
+    installBannerDismissed = false;
+  }
+}
+function dismissInstallBanner(){
+  installBannerDismissed = true;
+  document.getElementById('installBanner').innerHTML = '';
+  try{
+    localStorage.setItem('install-banner-dismissed', 'yes');
+  }catch(e){
+    console.error('No se pudo guardar', e);
+  }
+}
+function renderInstallBanner(){
+  const el = document.getElementById('installBanner');
+  if(!el) return;
+  if(installBannerDismissed || isStandalone()){
+    el.innerHTML = '';
+    return;
+  }
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const steps = isIOS
+    ? `<li>Tocá el botón compartir (el cuadradito con la flecha ↑) abajo en Safari</li><li>Elegí "Agregar a pantalla de inicio"</li>`
+    : `<li>Tocá el menú (⋮) arriba a la derecha de Chrome</li><li>Elegí "Agregar a pantalla de inicio" o "Instalar app"</li>`;
+  el.innerHTML = `
+    <div class="install-banner">
+      <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
+      <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
+      <ol class="install-steps">${steps}</ol>
+    </div>
+  `;
+  document.getElementById('installBannerClose').addEventListener('click', dismissInstallBanner);
+}
+
+
+let loadFailed = false;
+let realtimeChannel = null;
+let applyingRemoteUpdate = false;
+
+function normalizeState(raw){
+  const s = raw || { members: [], currentIndex: 0, history: [], nextMeetingDate: null, scheduleAnchor: null, debts: [], credits: [], committed: false, currentMenu: null, attendance: {} };
+  if(s.nextMeetingDate === undefined) s.nextMeetingDate = null;
+  if(s.scheduleAnchor === undefined) s.scheduleAnchor = null;
+  if(!s.debts) s.debts = [];
+  if(!s.credits) s.credits = [];
+  if(s.committed === undefined) s.committed = false;
+  if(s.currentMenu === undefined) s.currentMenu = null;
+  if(!s.attendance) s.attendance = {};
+  s.history = s.history || [];
+  s.history.forEach((h, i) => {
+    if(!h.id) h.id = 'h' + Date.now() + i + Math.random().toString(36).slice(2,5);
+    if(!h.ratings) h.ratings = {};
+    if(h.attendance === undefined) h.attendance = null;
+    if(h.menu === undefined) h.menu = null;
+  });
+  // migración: el formato viejo guardaba pares {debtor, creditor} enlazados.
+  const oldPaired = s.debts.filter(d => d.debtor !== undefined);
+  if(oldPaired.length){
+    const newDebts = [];
+    const newCredits = s.credits.slice();
+    oldPaired.forEach(d => {
+      newDebts.push({ id: d.id, name: d.debtor, relatedTo: d.creditor, date: d.date, reason: d.reason || null, settled: !!d.settled });
+      newCredits.push({ id: d.id + 'c', name: d.creditor, relatedTo: d.debtor, date: d.date, settled: !!d.settled });
+    });
+    s.debts = s.debts.filter(d => d.debtor === undefined).concat(newDebts);
+    s.credits = newCredits;
+  }
+  return s;
+}
+
+async function loadState(){
+  let fetchedOk = false;
+  let raw = null;
+
+  for(let attempt = 0; attempt < 3; attempt++){
+    try{
+      const { data, error } = await sb.from('app_state').select('data').eq('id', 1).single();
+      if(error) throw error;
+      raw = data ? data.data : null;
+      fetchedOk = true;
+      break;
+    }catch(e){
+      console.error('Error cargando estado (intento ' + attempt + '):', e);
+      await new Promise(r => setTimeout(r, 600));
+    }
+  }
+
+  if(!fetchedOk){
+    loadFailed = true;
+    return;
+  }
+  loadFailed = false;
+  state = normalizeState(raw);
+  setupRealtime();
+}
+
+async function saveState(){
+  try{
+    applyingRemoteUpdate = true; // evita que nuestro propio update dispare un re-render redundante al llegar por realtime
+    const { error } = await sb.from('app_state').update({ data: state, updated_at: new Date().toISOString() }).eq('id', 1);
+    if(error) throw error;
+  }catch(e){
+    console.error('No se pudo guardar', e);
+  }finally{
+    setTimeout(() => { applyingRemoteUpdate = false; }, 300);
+  }
+}
+
+function setupRealtime(){
+  if(realtimeChannel) return; // ya suscripto
+  realtimeChannel = sb.channel('app_state_changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'id=eq.1' }, (payload) => {
+      if(applyingRemoteUpdate) return; // fue nuestro propio guardado, ya estamos al día
+      state = normalizeState(payload.new.data);
+      render();
+    })
+    .subscribe();
+}
+
+function unsettledDebtsOf(name){
+  return (state.debts || []).filter(d => !d.settled && d.name === name);
+}
+function oldestUnsettledDebtOf(name){
+  const list = unsettledDebtsOf(name);
+  return list.length ? list[0] : null; // se van empujando en orden, el primero es el más viejo
+}
+function unsettledCreditsOf(name){
+  return (state.credits || []).filter(c => !c.settled && c.name === name);
+}
+function oldestUnsettledCreditOf(name){
+  const list = unsettledCreditsOf(name);
+  return list.length ? list[0] : null;
+}
+
+function renderRatingCard(){
+  const container = document.getElementById('ratingCard');
+  const history = state.history || [];
+  if(history.length === 0){ container.innerHTML = ''; return; }
+
+  const last = history[history.length - 1];
+  const canRate = myIdentity
+    && myIdentity !== last.name
+    && last.attendance
+    && last.attendance[myIdentity] === 'yes';
+
+  if(!canRate){ container.innerHTML = ''; return; }
+
+  const myRating = (last.ratings && last.ratings[myIdentity]) || 0;
+  const stars = [1,2,3,4,5].map(n => `
+    <button class="star-btn ${n <= myRating ? 'filled' : ''}" data-value="${n}" aria-label="${n} estrellas">★</button>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="rating-card">
+      <p class="rating-title">¿Cómo estuvo la juntada de ${escapeHtml(last.name)}${last.menu ? ` (${escapeHtml(last.menu)})` : ''}?</p>
+      <div class="stars-row" id="starsRow">${stars}</div>
+      ${myRating ? `<p class="rating-thanks">¡Gracias por calificar!</p>` : ''}
+    </div>
+  `;
+  container.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('click', () => submitRating(last.id, parseInt(btn.dataset.value)));
+  });
+}
+
+function render(){
+  const card = document.getElementById('mainCard');
+  const historyToggle = document.getElementById('historyToggle');
+  const historyList = document.getElementById('historyList');
+
+  renderRatingCard();
+  renderInstallBanner();
+
+  if(!state.members || state.members.length === 0){
+    card.innerHTML = `
+      <div class="empty-state">
+        <p>Todavía no armaste el orden de la barra.<br>Sumá a los que rotan y quedan pinneados acá.</p>
+        <button class="done-btn" id="emptyAddBtn">Armar la barra</button>
+      </div>
+    `;
+    document.getElementById('emptyAddBtn').addEventListener('click', openPanel);
+    historyToggle.style.display = 'none';
+    historyList.classList.remove('open');
+    document.getElementById('identityLine').innerHTML = '';
+    return;
+  }
+
+  const idx = ((state.currentIndex % state.members.length) + state.members.length) % state.members.length;
+  const current = state.members[idx];
+  const currentDebts = unsettledDebtsOf(current);
+
+  let nextLineHtml;
+  if(currentDebts.length > 0){
+    nextLineHtml = `${escapeHtml(current)} tiene ${currentDebts.length} deuda${currentDebts.length>1?'s':''} pendiente${currentDebts.length>1?'s':''} — sigue de turno hasta saldarlas`;
+  }else{
+    const nextIdx = (idx + 1) % state.members.length;
+    nextLineHtml = `Después le sigue ${escapeHtml(state.members[nextIdx])}`;
+  }
+
+  const orderRowsHtml = state.members.map((name, i) => {
+    const debtCount = unsettledDebtsOf(name).length;
+    return `
+    <div class="order-row ${i === idx ? 'current' : ''}">
+      <span class="order-num">${i+1}</span>
+      <span class="order-name">${escapeHtml(name)}</span>
+      ${i === idx ? '<span class="order-check">◂ hoy</span>' : (debtCount > 0 ? `<span class="order-check">debe ${debtCount}</span>` : '')}
+    </div>
+  `;}).join('');
+
+  const dateLineHtml = state.nextMeetingDate
+    ? `Próxima juntada: <strong>${fmtDateLong(state.nextMeetingDate)}</strong>`
+    : `Todavía no cargaste la fecha de la próxima juntada`;
+
+  const myCredits = unsettledCreditsOf(current);
+  const canUseCredit = currentDebts.length === 0 && myCredits.length > 0;
+  const isMyTurn = myIdentity && myIdentity === current;
+
+  const actionsHtml = isMyTurn ? `
+    <button class="done-btn" id="doneBtn">${state.committed ? 'Ya la organicé ✓' : 'Organizo yo'}</button>
+    ${(!state.committed && canUseCredit) ? `<button class="credit-btn" id="creditLink">Usar un crédito → pasarlo gratis</button>` : ''}
+    <button class="swap-link" id="swapLink">${escapeHtml(current)} no puede esta vez → pasar el turno</button>
+  ` : `
+    <div class="not-my-turn-box">
+      ${myIdentity
+        ? `Le toca organizar (o pasar el turno) a <strong>${escapeHtml(current)}</strong>. Vos estás como <strong>${escapeHtml(myIdentity)}</strong> — <span class="change-identity" id="changeIdentityBtn2">¿no sos vos? cambiar</span>.`
+        : `Le toca organizar (o pasar el turno) a <strong>${escapeHtml(current)}</strong>. <span class="change-identity" id="changeIdentityBtn2">Decinos quién sos</span> para poder usar los botones cuando te toque.`
+      }
+    </div>
+  `;
+
+  const menuHtml = state.currentMenu
+    ? `Menú: <strong>${escapeHtml(state.currentMenu)}</strong>`
+    : `Todavía no hay menú cargado`;
+
+  card.innerHTML = `
+    <p class="label-eyebrow">Esta juntada le toca a</p>
+    <p class="whose-turn">${escapeHtml(current)}</p>
+    <p class="next-date">${nextLineHtml}</p>
+    <div class="date-line">
+      <span>${dateLineHtml}</span>
+      <button class="edit-date-btn" id="editDateBtn" aria-label="Editar fecha">✎</button>
+    </div>
+    <div class="date-line">
+      <span>${menuHtml}</span>
+      ${isMyTurn ? `<button class="edit-date-btn" id="editMenuBtn" aria-label="Editar menú">✎</button>` : ''}
+    </div>
+    ${actionsHtml}
+    ${renderAttendanceSection()}
+    <div class="order-section">
+      <p class="order-title">Orden de rotación</p>
+      <div class="order-list">${orderRowsHtml}</div>
+    </div>
+    ${renderDebtsSection()}
+  `;
+
+  if(isMyTurn){
+    document.getElementById('doneBtn').addEventListener('click', () => {
+      if(!state.committed){
+        commitSelf();
+      }else{
+        openDateConfirm(null);
+      }
+    });
+    document.getElementById('swapLink').addEventListener('click', () => openSwapPanel(current, 'debt'));
+    if(canUseCredit && !state.committed){
+      document.getElementById('creditLink').addEventListener('click', () => openSwapPanel(current, 'credit'));
+    }
+  }else{
+    const changeBtn2 = document.getElementById('changeIdentityBtn2');
+    if(changeBtn2) changeBtn2.addEventListener('click', openIdentityPanel);
+  }
+  document.getElementById('editDateBtn').addEventListener('click', openEditNextDate);
+  const editMenuBtn = document.getElementById('editMenuBtn');
+  if(editMenuBtn) editMenuBtn.addEventListener('click', openEditMenu);
+  document.querySelectorAll('.attend-btn').forEach(btn => {
+    btn.addEventListener('click', () => setAttendance(myIdentity, btn.dataset.status));
+  });
+
+  const identityLine = document.getElementById('identityLine');
+  identityLine.innerHTML = myIdentity
+    ? `Estás como <strong>${escapeHtml(myIdentity)}</strong> · <span class="change-identity" id="changeIdentityBtn">cambiar</span>`
+    : `¿Quién sos? <span class="change-identity" id="changeIdentityBtn">elegí tu nombre</span>`;
+  document.getElementById('changeIdentityBtn').addEventListener('click', openIdentityPanel);
+
+  if(state.history && state.history.length > 0){
+    historyToggle.style.display = 'inline-block';
+    historyList.innerHTML = state.history.slice().reverse().map(h => {
+      const ratingVals = h.ratings ? Object.values(h.ratings) : [];
+      const avg = ratingVals.length ? (ratingVals.reduce((a,b)=>a+b,0) / ratingVals.length) : null;
+      const ratingHtml = avg ? `<span class="reason-tag">⭐ ${avg.toFixed(1)} (${ratingVals.length})</span>` : '';
+      return `
+      <div class="history-item">
+        <span>
+          ${escapeHtml(h.name)}${h.coveredFor ? ` <span class="cover-tag">cubrió a ${escapeHtml(h.coveredFor)}${h.usedCredit ? ' (con crédito)' : ''}</span>` : ''}
+          ${h.reason ? `<span class="reason-tag">"${escapeHtml(h.reason)}"</span>` : ''}
+          ${ratingHtml}
+        </span>
+        <span>${fmtDate(h.date)}</span>
+      </div>
+    `;}).join('');
+  }else{
+    historyToggle.style.display = 'none';
+  }
+}
+
+function renderAttendanceSection(){
+  if(!state.members || state.members.length === 0) return '';
+  const attendance = state.attendance || {};
+  const yesCount = state.members.filter(n => attendance[n] === 'yes').length;
+  const rows = state.members.map(n => {
+    const status = attendance[n];
+    const icon = status === 'yes' ? '✅' : status === 'no' ? '❌' : '—';
+    const isMe = myIdentity && n === myIdentity;
+    const myButtons = isMe ? `
+      <button class="attend-btn ${status==='yes'?'active-yes':''}" data-status="yes">Voy</button>
+      <button class="attend-btn ${status==='no'?'active-no':''}" data-status="no">No voy</button>
+    ` : '';
+    return `
+      <div class="attend-row">
+        <span class="attend-icon">${icon}</span>
+        <span class="attend-name">${escapeHtml(n)}</span>
+        ${myButtons}
+      </div>
+    `;
+  }).join('');
+  return `
+    <div class="attendance-section">
+      <p class="order-title">¿Quién va? (${yesCount}/${state.members.length})</p>
+      <div class="attend-list">${rows}</div>
+    </div>
+  `;
+}
+
+function renderDebtsSection(){
+  const pendingDebts = (state.debts || []).filter(d => !d.settled);
+  const pendingCredits = (state.credits || []).filter(c => !c.settled);
+  if(pendingDebts.length === 0 && pendingCredits.length === 0) return '';
+
+  const debtRows = pendingDebts.map(d => `
+    <div class="debt-row">
+      <span>${escapeHtml(d.name)} le debe un turno al grupo</span>
+    </div>
+  `).join('');
+  const creditRows = pendingCredits.map(c => `
+    <div class="debt-row credit-row">
+      <span>${escapeHtml(c.name)} tiene un crédito con el grupo</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="debts-section">
+      ${pendingDebts.length ? `<p class="order-title">Deben al grupo</p>${debtRows}` : ''}
+      ${pendingCredits.length ? `<p class="order-title" style="margin-top:${pendingDebts.length?'14px':'0'};">A favor</p>${creditRows}` : ''}
+    </div>
+  `;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function submitRating(entryId, value){
+  const entry = (state.history || []).find(h => h.id === entryId);
+  if(!entry || !myIdentity) return;
+  entry.ratings = entry.ratings || {};
+  entry.ratings[myIdentity] = value;
+  await saveState();
+  render();
+}
+
+async function saveMenu(text){
+  state.currentMenu = text && text.trim() ? text.trim() : null;
+  await saveState();
+  render();
+}
+async function setAttendance(name, status){
+  state.attendance = state.attendance || {};
+  state.attendance[name] = status;
+  await saveState();
+  render();
+}
+
+async function commitSelf(){
+  state.committed = true;
+  await saveState();
+  render();
+}
+
+async function markDone(coveredByName, meetingDateStr, reason, mode){
+  const idx = ((state.currentIndex % state.members.length) + state.members.length) % state.members.length;
+  const originalName = state.members[idx];
+  const isSwap = !!(coveredByName && coveredByName.trim() && coveredByName.trim() !== originalName);
+  const actualName = isSwap ? coveredByName.trim() : originalName;
+  const meetingDate = meetingDateStr || todayYMD();
+  const isCreditUse = isSwap && mode === 'credit';
+
+  state.history = state.history || [];
+  const entry = {
+    id: 'h' + Date.now() + Math.random().toString(36).slice(2,7),
+    name: actualName,
+    date: meetingDate,
+    menu: state.currentMenu || null,
+    attendance: { ...(state.attendance || {}) },
+    ratings: {}
+  };
+  if(isSwap){
+    entry.coveredFor = originalName;
+    if(isCreditUse){
+      entry.usedCredit = true;
+    }else if(reason && reason.trim()){
+      entry.reason = reason.trim();
+    }
+  }
+  state.history.push(entry);
+
+  if(isSwap){
+    if(isCreditUse){
+      // originalName gasta un crédito propio que ya tenía con el grupo — no genera deuda nueva.
+      const credit = oldestUnsettledCreditOf(originalName);
+      if(credit) credit.settled = true;
+    }else{
+      // originalName no pudo: le queda una deuda propia con el grupo (nada que ver con quién cubra).
+      state.debts = state.debts || [];
+      state.debts.push({
+        id: 'd' + Date.now() + Math.random().toString(36).slice(2,7),
+        name: originalName,
+        relatedTo: actualName,
+        date: meetingDate,
+        reason: reason && reason.trim() ? reason.trim() : null,
+        settled: false
+      });
+    }
+    // actualName organizó de verdad esta juntada: gana un crédito propio con el grupo,
+    // sea porque cubrió a alguien o porque ayudó a que otro use su crédito.
+    if(state.members.includes(actualName)){
+      state.credits = state.credits || [];
+      state.credits.push({
+        id: 'c' + Date.now() + Math.random().toString(36).slice(2,7),
+        name: actualName,
+        relatedTo: originalName,
+        date: meetingDate,
+        settled: false
+      });
+    }
+  }
+
+  if(isCreditUse){
+    // ya estaba "pre-pago" con el crédito propio: esta juntada avanza igual que si originalName hubiera organizado.
+    state.currentIndex = (idx + 1) % state.members.length;
+  }else if(isSwap){
+    // sigue debiendo su turno actual (deuda propia con el grupo), sigue siendo su turno.
+  }else{
+    // organizó de verdad: si tenía deudas propias pendientes, esto salda la más antigua.
+    const oldest = oldestUnsettledDebtOf(originalName);
+    if(oldest){
+      oldest.settled = true;
+    }
+    // si después de saldar (o si no tenía ninguna deuda) ya no le queda nada pendiente,
+    // esta misma organizada cuenta como su turno al día y avanza al siguiente.
+    if(unsettledDebtsOf(originalName).length === 0){
+      state.currentIndex = (idx + 1) % state.members.length;
+    }
+  }
+
+  state.committed = false;
+  state.currentMenu = null;
+  state.attendance = {};
+
+  // la próxima juntada sigue la grilla normal (cada 14 días desde el "ancla"),
+  // no desde la fecha real logueada — así una excepción puntual (feriado, etc)
+  // no corre para siempre el día de la semana en que se juntan.
+  if(!state.scheduleAnchor){
+    state.scheduleAnchor = meetingDate;
+  }
+  state.scheduleAnchor = addDays(state.scheduleAnchor, 14);
+  state.nextMeetingDate = state.scheduleAnchor;
+
+  await saveState();
+  render();
+}
+
+// --- Swap panel ---
+const swapOverlay = document.getElementById('swapOverlay');
+const swapOptionsEl = document.getElementById('swapOptions');
+const swapOtherInput = document.getElementById('swapOtherInput');
+let swapSelected = null;
+let swapForName = null;
+
+let swapMode = 'debt';
+function openSwapPanel(currentName, mode){
+  swapMode = mode || 'debt';
+  swapForName = currentName;
+  swapSelected = null;
+
+  const reasonLabel = document.querySelector('label[for="swapReasonInput"]');
+  const reasonInput = document.getElementById('swapReasonInput');
+
+  if(swapMode === 'credit'){
+    document.getElementById('swapTitle').textContent = '¿Quién organiza en tu lugar?';
+    document.getElementById('swapSub').textContent =
+      `Vas a usar un crédito de una vez que cubriste a otro — no te genera deuda, pero esta juntada la tiene que organizar alguien.`;
+    reasonLabel.style.display = 'none';
+    reasonInput.style.display = 'none';
+  }else{
+    document.getElementById('swapTitle').textContent = '¿Quién cubre esta vez?';
+    document.getElementById('swapSub').textContent =
+      `${currentName} no puede esta juntada. Elegí quién se hace cargo esta vez — ${currentName} va a seguir "debiendo" su turno hasta que le toque organizar de verdad.`;
+    reasonLabel.style.display = 'block';
+    reasonInput.style.display = 'block';
+  }
+
+  const others = state.members.filter(n => n !== currentName);
+  swapOptionsEl.innerHTML = others.map(n => {
+    const debtCount = unsettledDebtsOf(n).length;
+    return `
+    <label class="swap-option" data-name="${escapeHtml(n)}">
+      <input type="radio" name="swapChoice" value="${escapeHtml(n)}">
+      ${escapeHtml(n)}${debtCount > 0 ? ` <span class="reason-tag" style="display:inline;">(debe ${debtCount})</span>` : ''}
+    </label>
+  `;}).join('') + `
+    <label class="swap-option" data-name="__other__">
+      <input type="radio" name="swapChoice" value="__other__">
+      Otra persona
+    </label>
+  `;
+  swapOtherInput.style.display = 'none';
+  swapOtherInput.value = '';
+  document.getElementById('swapReasonInput').value = '';
+  document.getElementById('swapReasonError').style.display = 'none';
+  document.getElementById('confirmedCheck').checked = false;
+  document.getElementById('confirmedError').style.display = 'none';
+  swapOptionsEl.querySelectorAll('.swap-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      swapOptionsEl.querySelectorAll('.swap-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.querySelector('input').checked = true;
+      swapSelected = opt.dataset.name;
+      swapOtherInput.style.display = swapSelected === '__other__' ? 'block' : 'none';
+      if(swapSelected === '__other__'){ swapOtherInput.focus(); }
+    });
+  });
+  swapOverlay.classList.add('open');
+}
+document.getElementById('confirmedCheck').addEventListener('change', (e) => {
+  if(e.target.checked) document.getElementById('confirmedError').style.display = 'none';
+});
+
+document.getElementById('swapCancelBtn').addEventListener('click', () => {
+  swapOverlay.classList.remove('open');
+});
+document.getElementById('swapConfirmBtn').addEventListener('click', async () => {
+  let finalName = null;
+  if(swapSelected === '__other__'){
+    finalName = swapOtherInput.value.trim();
+  }else if(swapSelected){
+    finalName = swapSelected;
+  }
+  if(!finalName){
+    swapOtherInput.style.display = 'block';
+    swapOtherInput.placeholder = 'Escribí un nombre para continuar';
+    swapOtherInput.focus();
+    return;
+  }
+  if(swapMode === 'debt'){
+    const reason = document.getElementById('swapReasonInput').value.trim();
+    if(!reason){
+      document.getElementById('swapReasonError').style.display = 'block';
+      document.getElementById('swapReasonInput').focus();
+      return;
+    }
+    if(!document.getElementById('confirmedCheck').checked){
+      document.getElementById('confirmedError').style.display = 'block';
+      return;
+    }
+    swapOverlay.classList.remove('open');
+    openDateConfirm(finalName, reason, 'debt');
+  }else{
+    if(!document.getElementById('confirmedCheck').checked){
+      document.getElementById('confirmedError').style.display = 'block';
+      return;
+    }
+    swapOverlay.classList.remove('open');
+    openDateConfirm(finalName, null, 'credit');
+  }
+});
+
+// --- Date confirm (al cerrar un turno) ---
+let pendingCoveredBy = null;
+let pendingReason = null;
+let pendingMode = 'debt';
+function openDateConfirm(coveredByName, reason, mode){
+  pendingCoveredBy = coveredByName || null;
+  pendingReason = reason || null;
+  pendingMode = mode || 'debt';
+  const defaultDate = state.nextMeetingDate || todayYMD();
+  document.getElementById('meetingDateInput').value = defaultDate;
+  document.getElementById('dateConfirmSub').textContent = coveredByName
+    ? `${coveredByName} va a quedar anotado como quien organizó esta juntada.`
+    : 'Confirmá o corregí la fecha de esta juntada.';
+  document.getElementById('dateConfirmOverlay').classList.add('open');
+}
+document.getElementById('dateConfirmCancelBtn').addEventListener('click', () => {
+  document.getElementById('dateConfirmOverlay').classList.remove('open');
+});
+document.getElementById('dateConfirmOkBtn').addEventListener('click', async () => {
+  const val = document.getElementById('meetingDateInput').value;
+  if(!val) return;
+  const btn = document.getElementById('dateConfirmOkBtn');
+  btn.disabled = true;
+  document.getElementById('dateConfirmOverlay').classList.remove('open');
+  await markDone(pendingCoveredBy, val, pendingReason, pendingMode);
+  btn.disabled = false;
+});
+
+// --- Editar próxima fecha manualmente (feriados, viajes, etc) ---
+function openEditNextDate(){
+  document.getElementById('nextDateInput').value = state.nextMeetingDate || todayYMD();
+  const subEl = document.querySelector('#editNextDateOverlay .swap-panel-sub');
+  subEl.textContent = state.scheduleAnchor
+    ? 'Esto corrige solo esta juntada puntual (feriado, viaje, etc). La cadencia normal de miércoles por medio sigue como estaba.'
+    : 'Esta va a ser la fecha base: a partir de acá se arma la cadencia de miércoles por medio.';
+  document.getElementById('editNextDateOverlay').classList.add('open');
+}
+document.getElementById('editNextDateCancelBtn').addEventListener('click', () => {
+  document.getElementById('editNextDateOverlay').classList.remove('open');
+});
+document.getElementById('editNextDateOkBtn').addEventListener('click', async () => {
+  const val = document.getElementById('nextDateInput').value;
+  if(!val) return;
+  state.nextMeetingDate = val;
+  // si todavía no había grilla armada (primera vez), esta fecha la define.
+  // si ya existía, esto es una excepción puntual: el ancla NO se toca.
+  if(!state.scheduleAnchor){
+    state.scheduleAnchor = val;
+  }
+  await saveState();
+  document.getElementById('editNextDateOverlay').classList.remove('open');
+  render();
+});
+
+document.getElementById('historyToggle').addEventListener('click', () => {
+  const el = document.getElementById('historyList');
+  el.classList.toggle('open');
+  document.getElementById('historyToggle').textContent = el.classList.contains('open') ? 'Ocultar historial' : 'Ver historial';
+});
+
+// Settings panel
+const overlay = document.getElementById('overlay');
+const nameRowsEl = document.getElementById('nameRows');
+let editingNames = [];
+
+function openPanel(){
+  editingNames = state.members && state.members.length ? [...state.members] : [''];
+  renderNameRows();
+  overlay.classList.add('open');
+}
+function closePanel(){
+  overlay.classList.remove('open');
+}
+function renderNameRows(){
+  nameRowsEl.innerHTML = editingNames.map((name, i) => `
+    <div class="name-row">
+      <input type="text" value="${escapeHtml(name)}" data-i="${i}" placeholder="Nombre">
+      <button class="remove-btn" data-remove="${i}" aria-label="Sacar">✕</button>
+    </div>
+  `).join('');
+  nameRowsEl.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      editingNames[parseInt(e.target.dataset.i)] = e.target.value;
+    });
+  });
+  nameRowsEl.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const i = parseInt(e.target.dataset.remove);
+      editingNames.splice(i, 1);
+      renderNameRows();
+    });
+  });
+}
+
+document.getElementById('gearBtn').addEventListener('click', openPanel);
+document.getElementById('cancelBtn').addEventListener('click', closePanel);
+document.getElementById('addNameBtn').addEventListener('click', () => {
+  editingNames.push('');
+  renderNameRows();
+});
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const cleaned = editingNames.map(n => n.trim()).filter(n => n.length > 0);
+  const oldCurrentName = (state.members && state.members.length) ? state.members[((state.currentIndex % state.members.length)+state.members.length)%state.members.length] : null;
+  state.members = cleaned;
+  state.debts = (state.debts || []).filter(d => cleaned.includes(d.name));
+  state.credits = (state.credits || []).filter(c => cleaned.includes(c.name));
+  // try to keep pointing at the same person if they still exist, else reset to 0
+  if(oldCurrentName && cleaned.includes(oldCurrentName)){
+    state.currentIndex = cleaned.indexOf(oldCurrentName);
+  }else{
+    state.currentIndex = 0;
+  }
+  await saveState();
+  closePanel();
+  render();
+});
+
+function openEditMenu(){
+  document.getElementById('menuInput').value = state.currentMenu || '';
+  document.getElementById('menuOverlay').classList.add('open');
+}
+document.getElementById('menuCancelBtn').addEventListener('click', () => {
+  document.getElementById('menuOverlay').classList.remove('open');
+});
+document.getElementById('menuSaveBtn').addEventListener('click', async () => {
+  const val = document.getElementById('menuInput').value;
+  document.getElementById('menuOverlay').classList.remove('open');
+  await saveMenu(val);
+});
+
+// --- Identidad personal (quién sos en este navegador) ---
+let identitySelected = null;
+function openIdentityPanel(){
+  identitySelected = myIdentity;
+  const optionsEl = document.getElementById('identityOptions');
+  optionsEl.innerHTML = (state.members || []).map(n => `
+    <label class="swap-option ${n === myIdentity ? 'selected' : ''}" data-name="${escapeHtml(n)}">
+      <input type="radio" name="identityChoice" value="${escapeHtml(n)}" ${n === myIdentity ? 'checked' : ''}>
+      ${escapeHtml(n)}
+    </label>
+  `).join('');
+  optionsEl.querySelectorAll('.swap-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      optionsEl.querySelectorAll('.swap-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.querySelector('input').checked = true;
+      identitySelected = opt.dataset.name;
+    });
+  });
+  document.getElementById('identityOverlay').classList.add('open');
+}
+document.getElementById('identityCancelBtn').addEventListener('click', () => {
+  document.getElementById('identityOverlay').classList.remove('open');
+});
+document.getElementById('identitySaveBtn').addEventListener('click', async () => {
+  if(!identitySelected) return;
+  await saveIdentity(identitySelected);
+  document.getElementById('identityOverlay').classList.remove('open');
+  render();
+});
+
+const CORRECT_PIN = '091218';
+
+function isPinVerified(){
+  try{
+    return localStorage.getItem('pin-verified') === 'yes';
+  }catch(e){
+    return false;
+  }
+}
+function savePinVerified(){
+  try{
+    localStorage.setItem('pin-verified', 'yes');
+  }catch(e){
+    console.error('No se pudo guardar la verificación del PIN', e);
+  }
+}
+
+function showApp(){
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('mainWrap').style.display = 'block';
+  init();
+}
+
+document.getElementById('pinSubmitBtn').addEventListener('click', () => {
+  const val = document.getElementById('pinInput').value.trim();
+  if(val === CORRECT_PIN){
+    savePinVerified();
+    showApp();
+  }else{
+    document.getElementById('pinError').style.display = 'block';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+});
+document.getElementById('pinInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('pinSubmitBtn').click();
+});
+
+if(isPinVerified()){
+  showApp();
+}else{
+  document.getElementById('pinInput').focus();
+}
+
+async function init(){
+  loadIdentity();
+  loadInstallBannerDismissed();
+  await loadState();
+  if(loadFailed){
+    renderLoadError();
+  }else{
+    render();
+  }
+}
+
+function renderLoadError(){
+  const card = document.getElementById('mainCard');
+  document.getElementById('identityLine').innerHTML = '';
+  document.getElementById('ratingCard').innerHTML = '';
+  document.getElementById('installBanner').innerHTML = '';
+  card.innerHTML = `
+    <div class="empty-state">
+      <p>No pudimos cargar los datos compartidos de la barra todavía.</p>
+      <p style="font-size:13px; margin-top:-8px;">Puede ser un problema de conexión, o que Supabase esté con un inconveniente pasajero. Tocá reintentar en unos segundos.</p>
+      <button class="done-btn" id="retryLoadBtn">Reintentar</button>
+    </div>
+  `;
+  document.getElementById('retryLoadBtn').addEventListener('click', async () => {
+    document.getElementById('retryLoadBtn').textContent = 'Cargando...';
+    await loadState();
+    if(loadFailed){
+      renderLoadError();
+    }else{
+      render();
+    }
+  });
+}
+</script>
 </body>
 </html>
