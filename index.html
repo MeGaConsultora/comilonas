@@ -829,42 +829,94 @@ function isStandalone(){
   return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
 }
 
-let installBannerDismissed = false;
-function loadInstallBannerDismissed(){
-  try{
-    installBannerDismissed = localStorage.getItem('install-banner-dismissed') === 'yes';
-  }catch(e){
-    installBannerDismissed = false;
-  }
-}
-function dismissInstallBanner(){
-  installBannerDismissed = true;
+// Capturamos el evento nativo de instalación apenas el navegador lo dispare,
+// para poder mostrar nosotros mismos un botón persistente (en vez de depender
+// del cartelito de Chrome, que aparece una sola vez y desaparece solo).
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  renderInstallBanner();
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  installedJustNow = true;
+  renderInstallBanner();
+});
+
+let installedJustNow = false;
+let installBannerSessionClosed = false; // se cierra solo por esta visita, no para siempre
+
+function closeInstallBannerForNow(){
+  installBannerSessionClosed = true;
   document.getElementById('installBanner').innerHTML = '';
-  try{
-    localStorage.setItem('install-banner-dismissed', 'yes');
-  }catch(e){
-    console.error('No se pudo guardar', e);
-  }
 }
+
+async function triggerInstall(){
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const choice = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  if(choice.outcome === 'accepted'){
+    installedJustNow = true;
+  }
+  renderInstallBanner();
+}
+
 function renderInstallBanner(){
   const el = document.getElementById('installBanner');
   if(!el) return;
-  if(installBannerDismissed || isStandalone()){
-    el.innerHTML = '';
+
+  if(isStandalone() || installedJustNow){
+    el.innerHTML = installedJustNow ? `
+      <div class="install-banner">
+        ✅ <strong>¡Instalada!</strong> Buscá el ícono "Juntada" en tu pantalla de inicio la próxima vez.
+      </div>
+    ` : '';
     return;
   }
+  if(installBannerSessionClosed){ el.innerHTML = ''; return; }
+
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const steps = isIOS
-    ? `<li>Tocá el botón compartir (el cuadradito con la flecha ↑) abajo en Safari</li><li>Elegí "Agregar a pantalla de inicio"</li>`
-    : `<li>Tocá el menú (⋮) arriba a la derecha de Chrome</li><li>Elegí "Agregar a pantalla de inicio" o "Instalar app"</li>`;
-  el.innerHTML = `
-    <div class="install-banner">
-      <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
-      <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
-      <ol class="install-steps">${steps}</ol>
-    </div>
-  `;
-  document.getElementById('installBannerClose').addEventListener('click', dismissInstallBanner);
+
+  if(deferredInstallPrompt){
+    // Android/Chrome: tenemos el evento real, mostramos un botón que instala con un toque.
+    el.innerHTML = `
+      <div class="install-banner">
+        <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
+        <strong>📲 Instalala como app</strong> — un toque y te queda el ícono en la pantalla de inicio.
+        <button class="done-btn" id="installNowBtn" style="margin-top:10px;">Instalar app</button>
+      </div>
+    `;
+    document.getElementById('installNowBtn').addEventListener('click', triggerInstall);
+  }else if(isIOS){
+    // iOS no tiene un botón programático — Apple no lo permite, solo el paso manual.
+    el.innerHTML = `
+      <div class="install-banner">
+        <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
+        <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
+        <ol class="install-steps">
+          <li>Tocá el botón compartir (el cuadradito con la flecha ↑) abajo en Safari</li>
+          <li>Elegí "Agregar a pantalla de inicio"</li>
+        </ol>
+      </div>
+    `;
+  }else{
+    // Chrome sin el evento disponible todavía (o ya se instaló antes en este navegador
+    // y por eso no lo vuelve a ofrecer), dejamos las instrucciones manuales de respaldo.
+    el.innerHTML = `
+      <div class="install-banner">
+        <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
+        <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
+        <ol class="install-steps">
+          <li>Tocá el menú (⋮) arriba a la derecha de Chrome</li>
+          <li>Elegí "Agregar a pantalla de inicio" o "Instalar app"</li>
+        </ol>
+      </div>
+    `;
+  }
+  const closeBtn = document.getElementById('installBannerClose');
+  if(closeBtn) closeBtn.addEventListener('click', closeInstallBannerForNow);
 }
 
 
@@ -1627,7 +1679,6 @@ if(isPinVerified()){
 
 async function init(){
   loadIdentity();
-  loadInstallBannerDismissed();
   await loadState();
   if(loadFailed){
     renderLoadError();
