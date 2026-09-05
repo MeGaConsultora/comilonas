@@ -664,6 +664,7 @@
     <input type="password" inputmode="numeric" id="pinInput" class="lock-input" placeholder="••••••" maxlength="10" autofocus>
     <p class="lock-error" id="pinError" style="display:none;">PIN incorrecto, probá de nuevo.</p>
     <button class="lock-btn" id="pinSubmitBtn">Entrar</button>
+    <div id="installBannerLock" style="margin-top:14px; text-align:left;"></div>
   </div>
 </div>
 
@@ -832,8 +833,25 @@ function isStandalone(){
 // Capturamos el evento nativo de instalación apenas el navegador lo dispare,
 // para poder mostrar nosotros mismos un botón persistente (en vez de depender
 // del cartelito de Chrome, que aparece una sola vez y desaparece solo).
+// contamos visitas (por navegador) para no mostrar el aviso de instalar
+// recién en la primera entrada — le damos una vuelta más de margen a Chrome
+// para que dispare su propio evento de instalación antes de mostrar nada.
+let visitCount = 1;
+try{
+  const stored = parseInt(localStorage.getItem('visit-count') || '0', 10);
+  visitCount = stored + 1;
+  localStorage.setItem('visit-count', String(visitCount));
+}catch(e){
+  visitCount = 2; // si no hay localStorage, no bloqueamos el aviso de más
+}
+
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
+  if(visitCount < 2){
+    // primera visita: dejamos pasar el cartelito nativo de Chrome tal cual,
+    // sin interferir. No guardamos el evento ni mostramos nada propio.
+    return;
+  }
   e.preventDefault();
   deferredInstallPrompt = e;
   renderInstallBanner();
@@ -864,60 +882,68 @@ async function triggerInstall(){
 }
 
 function renderInstallBanner(){
-  const el = document.getElementById('installBanner');
-  if(!el) return;
+  const targets = [document.getElementById('installBannerLock'), document.getElementById('installBanner')]
+    .filter(el => el);
+  if(targets.length === 0) return;
 
+  let html = '';
+  if(visitCount < 2 && !isStandalone() && !installedJustNow){
+    // primera visita: todavía no mostramos nada, le damos margen a Chrome
+    targets.forEach(el => { el.innerHTML = ''; });
+    return;
+  }
   if(isStandalone() || installedJustNow){
-    el.innerHTML = installedJustNow ? `
+    html = installedJustNow ? `
       <div class="install-banner">
         ✅ <strong>¡Instalada!</strong> Buscá el ícono "Juntada" en tu pantalla de inicio la próxima vez.
       </div>
     ` : '';
-    return;
-  }
-  if(installBannerSessionClosed){ el.innerHTML = ''; return; }
-
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  if(deferredInstallPrompt){
-    // Android/Chrome: tenemos el evento real, mostramos un botón que instala con un toque.
-    el.innerHTML = `
-      <div class="install-banner">
-        <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
-        <strong>📲 Instalala como app</strong> — un toque y te queda el ícono en la pantalla de inicio.
-        <button class="done-btn" id="installNowBtn" style="margin-top:10px;">Instalar app</button>
-      </div>
-    `;
-    document.getElementById('installNowBtn').addEventListener('click', triggerInstall);
-  }else if(isIOS){
-    // iOS no tiene un botón programático — Apple no lo permite, solo el paso manual.
-    el.innerHTML = `
-      <div class="install-banner">
-        <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
-        <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
-        <ol class="install-steps">
-          <li>Tocá el botón compartir (el cuadradito con la flecha ↑) abajo en Safari</li>
-          <li>Elegí "Agregar a pantalla de inicio"</li>
-        </ol>
-      </div>
-    `;
+  }else if(installBannerSessionClosed){
+    html = '';
   }else{
-    // Chrome sin el evento disponible todavía (o ya se instaló antes en este navegador
-    // y por eso no lo vuelve a ofrecer), dejamos las instrucciones manuales de respaldo.
-    el.innerHTML = `
-      <div class="install-banner">
-        <button class="install-close" id="installBannerClose" aria-label="Cerrar">✕</button>
-        <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
-        <ol class="install-steps">
-          <li>Tocá el menú (⋮) arriba a la derecha de Chrome</li>
-          <li>Elegí "Agregar a pantalla de inicio" o "Instalar app"</li>
-        </ol>
-      </div>
-    `;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(deferredInstallPrompt){
+      html = `
+        <div class="install-banner">
+          <button class="install-close" data-close-install aria-label="Cerrar">✕</button>
+          <strong>📲 Instalala como app</strong> — un toque y te queda el ícono en la pantalla de inicio.
+          <button class="done-btn" data-install-now style="margin-top:10px;">Instalar app</button>
+        </div>
+      `;
+    }else if(isIOS){
+      html = `
+        <div class="install-banner">
+          <button class="install-close" data-close-install aria-label="Cerrar">✕</button>
+          <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
+          <ol class="install-steps">
+            <li>Tocá el botón compartir (el cuadradito con la flecha ↑) abajo en Safari</li>
+            <li>Elegí "Agregar a pantalla de inicio"</li>
+          </ol>
+        </div>
+      `;
+    }else{
+      html = `
+        <div class="install-banner">
+          <button class="install-close" data-close-install aria-label="Cerrar">✕</button>
+          <strong>📲 Instalala como app</strong> — así entrás directo sin pasar por WhatsApp la próxima vez.
+          <ol class="install-steps">
+            <li>Tocá el menú (⋮) arriba a la derecha de Chrome</li>
+            <li>Elegí "Agregar a pantalla de inicio" o "Instalar app"</li>
+          </ol>
+        </div>
+      `;
+    }
   }
-  const closeBtn = document.getElementById('installBannerClose');
-  if(closeBtn) closeBtn.addEventListener('click', closeInstallBannerForNow);
+
+  targets.forEach(el => {
+    el.innerHTML = html;
+    const closeBtn = el.querySelector('[data-close-install]');
+    if(closeBtn) closeBtn.addEventListener('click', closeInstallBannerForNow);
+    const installBtn = el.querySelector('[data-install-now]');
+    if(installBtn) installBtn.addEventListener('click', triggerInstall);
+  });
 }
+renderInstallBanner();
 
 
 let loadFailed = false;
